@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="
+            http://www.springframework.org/schema/beans
+            http://www.springframework.org/schema/beans/spring-beans.xsd
+            http://www.springframework.org/schema/aop
+            http://www.springframework.org/schema/aop/spring-aop.xsd
+            http://www.springframework.org/schema/context
+            http://www.springframework.org/schema/context/spring-context-3.0.xsd
+            ">
+
+<!--
+    <context:annotation-config />
+    <context:compontent-scan base-package="com.spruds.transport" /> -->
+
+    <bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
+        <property name="driverClassName">
+            <value>com.mysql.jdbc.Driver</value>
+        </property>
+        <property name="url">
+            <value>jdbc:mysql://localhost/public_transport_spider?useUnicode=true&amp;characterEncoding=UTF8</value>
+        </property>
+        <property name="username">
+            <value>root</value>
+        </property>
+        <property name="password">
+            <value>memento</value>
+        </property>
+    </bean>
+
+    <bean id="sessionFactory" class="org.springframework.orm.hibernate3.annotation.AnnotationSessionFactoryBean">
+        <property name="dataSource" ref="dataSource"/>
+        <property name="annotatedClasses">
+            <list>
+                <value>com.spruds.transport.spider.model.Job</value>
+                <value>com.spruds.transport.spider.model.Route</value>
+                <value>com.spruds.transport.spider.model.Direction</value>
+                <value>com.spruds.transport.spider.model.DirectionStopLink</value>
+                <value>com.spruds.transport.spider.model.Stop</value>
+                <value>com.spruds.transport.spider.model.StopSchedule</value>
+                <value>com.spruds.transport.spider.model.FetchResult</value>
+            </list>
+        </property>
+        <property name="hibernateProperties">
+            <props>
+                <prop key="hibernate.dialect">org.hibernate.dialect.MySQLDialect</prop>
+                <prop key="hibernate.show_sql">false</prop>
+            </props>
+        </property>
+    </bean>
+
+    <bean id="hibernateTemplate" class="org.springframework.orm.hibernate3.HibernateTemplate">
+        <property name="sessionFactory" ref="sessionFactory"/>
+    </bean>
+
+    <!-- data providers -->
+    <bean id="httpManager" class="com.spruds.transport.spider.utils.HttpManager">
+        <property name="dataService" ref="scheduleDataService"/>
+    </bean>
+
+    <bean id="routeStore" class="com.spruds.transport.spider.provider.RouteStore">
+        <property name="httpManager" ref="httpManager"/>
+    </bean>
+    <bean id="directionStore" class="com.spruds.transport.spider.provider.DirectionStore">
+        <property name="httpManager" ref="httpManager"/>
+    </bean>
+    <bean id="stopLocationStore" class="com.spruds.transport.spider.provider.StopLocationStore">
+        <property name="httpManager" ref="httpManager"/>
+    </bean>
+    <bean id="stopScheduleStore" class="com.spruds.transport.spider.provider.StopScheduleStore">
+        <property name="httpManager" ref="httpManager"/>
+    </bean>
+
+    <!-- services -->
+    <bean id="spiderService" class="com.spruds.transport.spider.service.SpiderService">
+        <property name="scheduleDataService" ref="scheduleDataService"/>
+        <property name="stopScheduleStore" ref="stopScheduleStore"/>
+        <property name="stopLocationStore" ref="stopLocationStore"/>
+        <property name="directionStore" ref="directionStore"/>
+        <property name="routeStore" ref="routeStore"/>
+    </bean>
+    <bean id="scheduleDataService" class="com.spruds.transport.spider.service.data.ScheduleDataService">
+        <property name="hibernateTemplate" ref="hibernateTemplate"/>
+    </bean>
+</beans>
